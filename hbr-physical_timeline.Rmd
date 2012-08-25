@@ -2,12 +2,23 @@
 
 I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
 
-```{r main}
-# read in the provided file, available on the kaggle site
+```{r}
+# set up graphics for later
+library(ggplot2)
+theme_set(theme_bw())
+
+# Read in the provided file, available at the kaggle site
 # https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/data
 hbr <- read.csv('HBR Citations_correct_abstracts.csv',
               strip.white=TRUE,
               as.is=TRUE)
+# This was working fine for a while and then knitr decided it couldn't handle
+# some unicode characters or something, so I had to do this on the command line:
+# LC_CTYPE=C tr -c -d "[:alnum:][:punct:][:space:]" \
+# < HBR\ Citations_correct_abstracts.csv > hbr.csv
+# cp HBR\ Citations_correct_abstracts.csv original.csv
+# mv hbr.csv HBR\ Citations_correct_abstracts.csv
+# Your mileage may vary.
 
 # make sure we've got the expected number of observations
 # as checked against the Excel files that were originally provided
@@ -25,14 +36,36 @@ hbr$abstract_type <- ifelse(hbr$ABSTRACT!="","HBR",
 
 # fix up the dates
 # without this you incorrectly get results like year 2068, etc...
+# the substringing only works because all the dates are 8 character
+stopifnot(all(nchar(hbr$SYSTEM..PUB.DATE)==8))
 hbr$dm <- substr(hbr$SYSTEM..PUB.DATE,1,6)
 hbr$y <- substr(hbr$SYSTEM..PUB.DATE,7,8)
 hbr$dmY <- ifelse(as.numeric(hbr$y)>20,
                   paste(hbr$dm,"19",hbr$y,sep=""),
                   paste(hbr$dm,"20",hbr$y,sep=""))
 hbr$date <- as.Date(hbr$dmY,format="%d-%b-%Y")
+hbr$year <- as.numeric(substr(hbr$date,1,4))
+```
+
+The first issue seems to have been published `r min(as.character(hbr$date))`. Everyone seems to agree on the year, at least. The [HBR wikipedia page](http://en.wikipedia.org/wiki/Harvard_Business_Review) adds this interesting tidbit:
+> Harvard Business Review began in 1922 as a magazine for Harvard Business School. Founded under the auspices of Dean Wallace Donham, HBR was meant to be more than just a typical school publication. "The paper [HBR] is intended to be the highest type of business journal that we can make it, and for use by the student and the business man. It is not a school paper," Donham wrote.
+
+```{r}
 
 # note: look at "PUBLICATION.DATE"          "VOLUME"                    "ISSUE"
+sort(unique(hbr$PUBLICATION.DATE[hbr$year==2010]))
+sort(unique(hbr$VOLUME))
+sort(unique(hbr$ISSUE))
+length(sort(unique(hbr$y)))
+sort(unique(hbr$date[hbr$VOLUME==2]))
+# interesting...
+dpy <- data.frame("year"=1922:2012,"peryear"=sapply(1922:2012,function(x){length(unique(hbr$date[hbr$year==x]))}))
+qplot(year, peryear, data=dpy, main="publication dates per year")
+```
+
+There's some fluctuation from special supplements and just irregularities, but broadly it was quartlerly, then bi-monthly, then close to monthly.
+
+```{r}
 
 # there are too many columns that I don't care about separately
 # there has GOT to be a better way to do this:
@@ -98,9 +131,6 @@ with(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT),],
      sum(FULL.TEXT.WORD.COUNT)/sum(PAGE.COUNT)) * 
        with(hbr[!is.na(hbr$PAGE.COUNT),], sum(PAGE.COUNT))
 
-# load graphics
-library(ggplot2)
-theme_set(theme_bw())
 
 # could be useful
 Sys.setenv(NOAWT=TRUE)
@@ -108,4 +138,10 @@ library(tm)
 data("crude")
 crude[[1]]
 stemDocument(crude[[1]])
+# and these are all vectorized
+temp <- removeNumbers(crude[[1]])
+temp <- removePunctuation(temp)
+temp <- tolower(temp)
+temp <- gsub('\n',' ',temp)
+stemDocument(temp)
 ```
