@@ -2,7 +2,7 @@
 
 I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
 
-```{r}
+```{r, tidy=FALSE}
 # set up graphics for later
 library(ggplot2)
 theme_set(theme_bw())
@@ -12,12 +12,12 @@ theme_set(theme_bw())
 hbr <- read.csv('HBR Citations_correct_abstracts.csv',
               strip.white=TRUE,
               as.is=TRUE)
-# This was working fine for a while and then knitr decided it couldn't handle
+# This was working fine for a while and then something went wrong somehow with
 # some unicode characters or something, so I had to do this on the command line:
 # LC_CTYPE=C tr -c -d "[:alnum:][:punct:][:space:]" \
-# < HBR\ Citations_correct_abstracts.csv > hbr.csv
-# cp HBR\ Citations_correct_abstracts.csv original.csv
-# mv hbr.csv HBR\ Citations_correct_abstracts.csv
+# < 'HBR Citations_correct_abstracts.csv' > hbr.csv
+# cp 'HBR Citations_correct_abstracts.csv' original.csv
+# mv hbr.csv 'HBR Citations_correct_abstracts.csv'
 # Your mileage may vary.
 
 # make sure we've got the expected number of observations
@@ -51,22 +51,56 @@ The first issue seems to have been published `r min(as.character(hbr$date))`. Ev
 > Harvard Business Review began in 1922 as a magazine for Harvard Business School. Founded under the auspices of Dean Wallace Donham, HBR was meant to be more than just a typical school publication. "The paper [HBR] is intended to be the highest type of business journal that we can make it, and for use by the student and the business man. It is not a school paper," Donham wrote.
 
 ```{r}
+# columns "VOLUME", "ISSUE", and "PUBLICATION.DATE", which has something like
+# volume names, are all moderately interesting,
+# but I'll be mostly concerned with publication dates as pulled out above
 
-# note: look at "PUBLICATION.DATE"          "VOLUME"                    "ISSUE"
-sort(unique(hbr$PUBLICATION.DATE[hbr$year==2010]))
-sort(unique(hbr$VOLUME))
-sort(unique(hbr$ISSUE))
-length(sort(unique(hbr$y)))
-sort(unique(hbr$date[hbr$VOLUME==2]))
-# interesting...
-dpy <- data.frame("year"=1922:2012,"peryear"=sapply(1922:2012,function(x){length(unique(hbr$date[hbr$year==x]))}))
+# How often is HBR published?
+years <- sort(unique(hbr$year))
+dpy <- data.frame("year"=years,
+                  "peryear"=sapply(years,function(x) {
+                    length(unique(hbr$date[hbr$year==x]))
+                    }))
 qplot(year, peryear, data=dpy, main="publication dates per year")
 ```
 
-There's some fluctuation from special supplements and just irregularities, but broadly it was quartlerly, then bi-monthly, then close to monthly.
+There's some fluctuation from special supplements and just irregularities, but broadly it was quartlerly, then bi-monthly, then close to monthly (10, 11, or 12 times per year). I'll pull out the years that start the second and third epochs.
 
 ```{r}
+# start of bi-monthly epoch
+head(dpy[dpy$peryear==6,],1)
 
+# start of near-monthly epoch
+head(dpy[dpy$peryear==11,],1)
+
+# let's look at page counts and word counts
+hbr$pagesN <- hbr$PAGE.COUNT
+# maybe it would be better to use "START.PAGE" and "END.PAGE"
+# I don't think it's worth checking into that; but I do want word count
+hbr$wordsN <- hbr$FULL.TEXT.WORD.COUNT
+```
+
+There are `r nrow(hbr)` entries total. Of these, `r nrow(hbr[!is.na(hbr$pagesN),])` have a page count, but only `r nrow(hbr[!is.na(hbr$wordsN),])` have a word count. (They started counting in `r head(sort(unique(hbr$year[!is.na(hbr$wordsN)])),1)`.) All but `r nrow(hbr[is.na(hbr$pagesN) & !is.na(hbr$wordsN),])` of the entries with word counts have page counts. Based on those entries, there's an average of `r with(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT),], sum(FULL.TEXT.WORD.COUNT)/sum(PAGE.COUNT))` words per page. At least [some people online](http://www.writersservices.com/wps/p_word_count.htm) think that's reasonable.
+
+> At one extreme you get large print books with 250 words on the page. Academic books might put 600 words on a page with works of reference squeezing in 1000 words.
+
+So we can get some sort of estimate of the total words ever published, adding in the word counts for the `r nrow(hbr[is.na(hbr$pagesN)&!is.na(hbr$wordsN),])` entries with word count but no page count, and giving the `r nrow(hbr[is.na(hbr$pagesN)&is.na(hbr$wordsN),])` entries with neither page count nor word count the average word count per entry with both of `r with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),], sum(wordsN)/length(pagesN))`.
+
+```{r}
+# calculate an estimated total word count for the history of HBR
+# (not very readable...)
+with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),], 
+     sum(wordsN)/sum(pagesN)) * 
+       with(hbr[!is.na(hbr$pagesN),], sum(pagesN)) +
+       with(hbr[is.na(hbr$pagesN)&!is.na(hbr$wordsN),], sum(wordsN)) +
+       with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),], 
+            sum(wordsN)/length(pagesN)) *
+       nrow(hbr[is.na(hbr$pagesN)&is.na(hbr$wordsN),])
+```
+
+I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `r nrow(hbr[!is.na(hbr$pagesN),])/nrow(hbr)` of entries have page counts, for a total of `r with(hbr[!is.na(hbr$pagesN),], sum(pagesN))` pages. I'll use page count as a estimate of quantity of content.
+
+```{r}
 # there are too many columns that I don't care about separately
 # there has GOT to be a better way to do this:
 hbr$naics <- ""
@@ -92,7 +126,7 @@ first_names <- c()
 last_names <- c()
 names <- c()
 affils <- c()
-hbr$n_authors <- 0
+hbr$authorsN <- 0
 for (i in 1:20) {
   last <- paste("AUTHOR.",i,".LAST.NAME",sep="")
   last_names <- c(last_names, hbr[[last]])
@@ -101,35 +135,22 @@ for (i in 1:20) {
   affil <- paste("AUTHOR.",i,".AFFILIATION",sep="")
   affils <- c(affils, hbr[[affil]]) 
   # if there's anything, that's an author
-  hbr$n_authors <- hbr$n_authors + ifelse(hbr[[last]]=="" &
-                                          hbr[[first]]=="" &
-                                          hbr[[affil]]=="",
-                                          0,1)
+  hbr$authorsN <- hbr$authorsN + ifelse(hbr[[last]]=="" &
+                                        hbr[[first]]=="" &
+                                        hbr[[affil]]=="",
+                                        0,1)
 }
 names <- paste(first_names,last_names)
 # meet the most prolific HBR authors
 #tail(sort(table(names)),20)
 
 # authors per article over time
-with(hbr, smoothScatter(date,n_authors))
+with(hbr, smoothScatter(date,authorsN))
 
 # look at more stuff about number authors
-with(hbr, tapply(n_authors,DOCUMENT.TYPE,mean,na.rm=T))
+with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=T))
 
-# look at total words
-# total entries
-nrow(hbr)
-# with word count
-nrow(hbr[!is.na(hbr$FULL.TEXT.WORD.COUNT),])
-# most of these also have page counts
-nrow(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT),])
-# but nearly everything has page count
-nrow(hbr[!is.na(hbr$PAGE.COUNT),])
-# so use the average of entries with both to get
-# an estimated total words for all entries
-with(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT),], 
-     sum(FULL.TEXT.WORD.COUNT)/sum(PAGE.COUNT)) * 
-       with(hbr[!is.na(hbr$PAGE.COUNT),], sum(PAGE.COUNT))
+
 
 
 # could be useful

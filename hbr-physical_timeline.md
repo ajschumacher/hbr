@@ -10,39 +10,42 @@ theme_set(theme_bw())
 
 # Read in the provided file, available at the kaggle site
 # https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/data
-hbr <- read.csv("HBR Citations_correct_abstracts.csv", strip.white = TRUE, 
-    as.is = TRUE)
-# This was working fine for a while and then knitr decided it couldn't
-# handle some unicode characters or something, so I had to do this on the
-# command line: LC_CTYPE=C tr -c -d '[:alnum:][:punct:][:space:]' \ <
-# HBR\ Citations_correct_abstracts.csv > hbr.csv cp HBR\
-# Citations_correct_abstracts.csv original.csv mv hbr.csv HBR\
-# Citations_correct_abstracts.csv Your mileage may vary.
+hbr <- read.csv('HBR Citations_correct_abstracts.csv',
+              strip.white=TRUE,
+              as.is=TRUE)
+# This was working fine for a while and then something went wrong somehow with
+# some unicode characters or something, so I had to do this on the command line:
+# LC_CTYPE=C tr -c -d "[:alnum:][:punct:][:space:]" \
+# < 'HBR Citations_correct_abstracts.csv' > hbr.csv
+# cp 'HBR Citations_correct_abstracts.csv' original.csv
+# mv hbr.csv 'HBR Citations_correct_abstracts.csv'
+# Your mileage may vary.
 
-# make sure we've got the expected number of observations as checked
-# against the Excel files that were originally provided
-stopifnot(nrow(hbr) == 12751)
+# make sure we've got the expected number of observations
+# as checked against the Excel files that were originally provided
+stopifnot(nrow(hbr)==12751)
 
-# confirm that there's always at most one of ABSTRACT or
-# AUTHOR.SUPPLIED.ABSTRACT
-stopifnot(all(hbr$ABSTRACT == "" | hbr$AUTHOR.SUPPLIED.ABSTRACT == 
-    ""))
+# confirm that there's always at most one of
+# ABSTRACT or AUTHOR.SUPPLIED.ABSTRACT
+stopifnot(all(hbr$ABSTRACT=="" | hbr$AUTHOR.SUPPLIED.ABSTRACT==""))
 # and put it in a more convenient place
-hbr$abstract <- ifelse(hbr$ABSTRACT != "", hbr$ABSTRACT, hbr$AUTHOR.SUPPLIED.ABSTRACT)
+hbr$abstract <- ifelse(hbr$ABSTRACT!="",hbr$ABSTRACT,hbr$AUTHOR.SUPPLIED.ABSTRACT)
 # preserve information just in case
-hbr$abstract_type <- ifelse(hbr$ABSTRACT != "", "HBR", ifelse(hbr$AUTHOR.SUPPLIED.ABSTRACT != 
-    "", "author", "none"))
+hbr$abstract_type <- ifelse(hbr$ABSTRACT!="","HBR",
+                            ifelse(hbr$AUTHOR.SUPPLIED.ABSTRACT!="","author",
+                                   "none"))
 
-# fix up the dates without this you incorrectly get results like year
-# 2068, etc...  the substringing only works because all the dates are 8
-# character
-stopifnot(all(nchar(hbr$SYSTEM..PUB.DATE) == 8))
-hbr$dm <- substr(hbr$SYSTEM..PUB.DATE, 1, 6)
-hbr$y <- substr(hbr$SYSTEM..PUB.DATE, 7, 8)
-hbr$dmY <- ifelse(as.numeric(hbr$y) > 20, paste(hbr$dm, "19", hbr$y, 
-    sep = ""), paste(hbr$dm, "20", hbr$y, sep = ""))
-hbr$date <- as.Date(hbr$dmY, format = "%d-%b-%Y")
-hbr$year <- as.numeric(substr(hbr$date, 1, 4))
+# fix up the dates
+# without this you incorrectly get results like year 2068, etc...
+# the substringing only works because all the dates are 8 character
+stopifnot(all(nchar(hbr$SYSTEM..PUB.DATE)==8))
+hbr$dm <- substr(hbr$SYSTEM..PUB.DATE,1,6)
+hbr$y <- substr(hbr$SYSTEM..PUB.DATE,7,8)
+hbr$dmY <- ifelse(as.numeric(hbr$y)>20,
+                  paste(hbr$dm,"19",hbr$y,sep=""),
+                  paste(hbr$dm,"20",hbr$y,sep=""))
+hbr$date <- as.Date(hbr$dmY,format="%d-%b-%Y")
+hbr$year <- as.numeric(substr(hbr$date,1,4))
 ```
 
 
@@ -51,55 +54,13 @@ The first issue seems to have been published `1922-10-01`. Everyone seems to agr
 
 
 ```r
+# columns 'VOLUME', 'ISSUE', and 'PUBLICATION.DATE', which has something
+# like volume names, are all moderately interesting, but I'll be mostly
+# concerned with publication dates as pulled out above
 
-# note: look at 'PUBLICATION.DATE' 'VOLUME' 'ISSUE'
-sort(unique(hbr$PUBLICATION.DATE[hbr$year == 2010]))
-```
-
-```
-##  [1] "10-Apr"      "10-Dec"      "10-Jun"      "10-Mar"      "10-May"     
-##  [6] "10-Nov"      "10-Oct"      "10-Sep"      "Jan/Feb2010" "Jul/Aug2010"
-```
-
-```r
-sort(unique(hbr$VOLUME))
-```
-
-```
-##  [1]  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
-## [24] 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46
-## [47] 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69
-## [70] 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90
-```
-
-```r
-sort(unique(hbr$ISSUE))
-```
-
-```
-##  [1] ""      "1"     "10"    "11"    "12"    "2"     "2-Jan" "3"    
-##  [9] "4"     "4a"    "5"     "6"     "7"     "8"     "8-Jul" "9"
-```
-
-```r
-length(sort(unique(hbr$y)))
-```
-
-```
-## [1] 91
-```
-
-```r
-sort(unique(hbr$date[hbr$VOLUME == 2]))
-```
-
-```
-## [1] "1923-10-01" "1924-01-01" "1924-04-01" "1924-07-01"
-```
-
-```r
-# interesting...
-dpy <- data.frame(year = 1922:2012, peryear = sapply(1922:2012, function(x) {
+# How often is HBR published?
+years <- sort(unique(hbr$year))
+dpy <- data.frame(year = years, peryear = sapply(years, function(x) {
     length(unique(hbr$date[hbr$year == x]))
 }))
 qplot(year, peryear, data = dpy, main = "publication dates per year")
@@ -108,11 +69,66 @@ qplot(year, peryear, data = dpy, main = "publication dates per year")
 ![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
 
 
-There's some fluctuation from special supplements and just irregularities, but broadly it was quartlerly, then bi-monthly, then close to monthly.
+There's some fluctuation from special supplements and just irregularities, but broadly it was quartlerly, then bi-monthly, then close to monthly (10, 11, or 12 times per year). I'll pull out the years that start the second and third epochs.
 
 
 ```r
+# start of bi-monthly epoch
+head(dpy[dpy$peryear == 6, ], 1)
+```
 
+```
+##    year peryear
+## 27 1948       6
+```
+
+```r
+
+# start of near-monthly epoch
+head(dpy[dpy$peryear == 11, ], 1)
+```
+
+```
+##    year peryear
+## 80 2001      11
+```
+
+```r
+
+# let's look at page counts and word counts
+hbr$pagesN <- hbr$PAGE.COUNT
+# maybe it would be better to use 'START.PAGE' and 'END.PAGE' I don't
+# think it's worth checking into that; but I do want word count
+hbr$wordsN <- hbr$FULL.TEXT.WORD.COUNT
+```
+
+
+There are `12751` entries total. Of these, `12549` have a page count, but only `5654` have a word count. (They started counting in `1990`.) All but `13` of the entries with word counts have page counts. Based on those entries, there's an average of `541.4908` words per page. At least [some people online](http://www.writersservices.com/wps/p_word_count.htm) think that's reasonable.
+
+> At one extreme you get large print books with 250 words on the page. Academic books might put 600 words on a page with works of reference squeezing in 1000 words.
+
+So we can get some sort of estimate of the total words ever published, adding in the word counts for the `13` entries with word count but no page count, and giving the `189` entries with neither page count nor word count the average word count per entry with both of `2210.3115`.
+
+
+```r
+# calculate an estimated total word count for the history of HBR (not very
+# readable...)
+with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN), ], sum(wordsN)/sum(pagesN)) * 
+    with(hbr[!is.na(hbr$pagesN), ], sum(pagesN)) + with(hbr[is.na(hbr$pagesN) & 
+    !is.na(hbr$wordsN), ], sum(wordsN)) + with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN), 
+    ], sum(wordsN)/length(pagesN)) * nrow(hbr[is.na(hbr$pagesN) & is.na(hbr$wordsN), 
+    ])
+```
+
+```
+## [1] 40085102
+```
+
+
+I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `0.9842` of entries have page counts, for a total of `73154` pages. I'll use page count as a estimate of quantity of content.
+
+
+```r
 # there are too many columns that I don't care about separately there has
 # GOT to be a better way to do this:
 hbr$naics <- ""
@@ -137,7 +153,7 @@ first_names <- c()
 last_names <- c()
 names <- c()
 affils <- c()
-hbr$n_authors <- 0
+hbr$authorsN <- 0
 for (i in 1:20) {
     last <- paste("AUTHOR.", i, ".LAST.NAME", sep = "")
     last_names <- c(last_names, hbr[[last]])
@@ -146,26 +162,26 @@ for (i in 1:20) {
     affil <- paste("AUTHOR.", i, ".AFFILIATION", sep = "")
     affils <- c(affils, hbr[[affil]])
     # if there's anything, that's an author
-    hbr$n_authors <- hbr$n_authors + ifelse(hbr[[last]] == "" & hbr[[first]] == 
+    hbr$authorsN <- hbr$authorsN + ifelse(hbr[[last]] == "" & hbr[[first]] == 
         "" & hbr[[affil]] == "", 0, 1)
 }
 names <- paste(first_names, last_names)
 # meet the most prolific HBR authors tail(sort(table(names)),20)
 
 # authors per article over time
-with(hbr, smoothScatter(date, n_authors))
+with(hbr, smoothScatter(date, authorsN))
 ```
 
 ```
 ## KernSmooth 2.23 loaded Copyright M. P. Wand 1997-2009
 ```
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
 
 ```r
 
 # look at more stuff about number authors
-with(hbr, tapply(n_authors, DOCUMENT.TYPE, mean, na.rm = T))
+with(hbr, tapply(authorsN, DOCUMENT.TYPE, mean, na.rm = T))
 ```
 
 ```
@@ -189,55 +205,7 @@ with(hbr, tapply(n_authors, DOCUMENT.TYPE, mean, na.rm = T))
 
 ```r
 
-# look at total words total entries
-nrow(hbr)
-```
 
-```
-## [1] 12751
-```
-
-```r
-# with word count
-nrow(hbr[!is.na(hbr$FULL.TEXT.WORD.COUNT), ])
-```
-
-```
-## [1] 5654
-```
-
-```r
-# most of these also have page counts
-nrow(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT), 
-    ])
-```
-
-```
-## [1] 5641
-```
-
-```r
-# but nearly everything has page count
-nrow(hbr[!is.na(hbr$PAGE.COUNT), ])
-```
-
-```
-## [1] 12549
-```
-
-```r
-# so use the average of entries with both to get an estimated total words
-# for all entries
-with(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT), 
-    ], sum(FULL.TEXT.WORD.COUNT)/sum(PAGE.COUNT)) * with(hbr[!is.na(hbr$PAGE.COUNT), 
-    ], sum(PAGE.COUNT))
-```
-
-```
-## [1] 39612217
-```
-
-```r
 
 
 # could be useful
