@@ -1,0 +1,85 @@
+# 90 Years of Harvard Business Review
+## A data exploration in R
+Aaron Schumacher
+
+```{r hidden,echo=FALSE}
+# Yihui considers this bad form, but...
+setwd('D:\\Aaron\\ajs-20120820-harvard_business_review')
+
+```
+
+
+# read in the provided file
+hbr <- read.csv('HBR Citations.csv',
+              strip.white=TRUE,
+              as.is=TRUE)
+
+nrow(hbr)
+# 12,751 observations: same as in the alternative Excel files
+
+# confirm that there's always at most one of
+# ABSTRACT or AUTHOR.SUPPLIED.ABSTRACT
+all(hbr$ABSTRACT=="" | hbr$AUTHOR.SUPPLIED.ABSTRACT=="")
+# and put it in place
+hbr$abstract <- ifelse(hbr$ABSTRACT!="",hbr$ABSTRACT,hbr$AUTHOR.SUPPLIED.ABSTRACT)
+hbr$abstract_type <- ifelse(hbr$ABSTRACT!="","HBR",
+                            ifelse(hbr$AUTHOR.SUPPLIED.ABSTRACT!="","author",
+                                   "none"))
+hbr$ABSTRACT <- NULL
+hbr$AUTHOR.SUPPLIED.ABSTRACT <- NULL
+
+# fix up the dates
+# without this you incorrectly get results like year 2068, etc...
+hbr$dm <- substr(hbr$SYSTEM..PUB.DATE,1,6)
+hbr$y <- substr(hbr$SYSTEM..PUB.DATE,8,9)
+hbr$dmY <- ifelse(as.numeric(hbr$y)>20,
+                  paste(hbr$dm,"-19",hbr$y,sep=""),
+                  paste(hbr$dm,"-20",hbr$y,sep=""))
+hbr$date <- as.Date(hbr$dmY,format="%d-%b-%Y")
+hbr$dm <- NULL
+hbr$y <- NULL
+hbr$dmY <-NULL
+hbr$SYSTEM..PUB.DATE <- NULL
+
+
+first_names <- c()
+last_names <- c()
+names <- c()
+affils <- c()
+hbr$n_authors <- 0
+for (i in 1:20) {
+  last <- paste("AUTHOR.",i,".LAST.NAME",sep="")
+  last_names <- c(last_names, hbr[[last]])
+  # if there's a last name, that's an author
+  hbr$n_authors <- hbr$n_authors + ifelse(hbr[[last]]=="",0,1)
+  first <- paste("AUTHOR.",i,".FIRST.NAME",sep="")
+  first_names <- c(first_names, hbr[[first]])
+  affil <- paste("AUTHOR.",i,".AFFILIATION",sep="")
+  affils <- c(affils, hbr[[affil]])
+}
+names <- paste(first_names,last_names)
+
+# meet the most prolific HBR authors
+tail(sort(table(names)),100)
+
+# look at more stuff about number authors
+with(hbr, tapply(n_authors,DOCUMENT.TYPE,mean,na.rm=T))
+
+# look at total words
+# total entries
+nrow(hbr)
+# with word count
+nrow(hbr[!is.na(hbr$FULL.TEXT.WORD.COUNT),])
+# most of these also have page counts
+nrow(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT),])
+# but nearly everything has page count
+nrow(hbr[!is.na(hbr$PAGE.COUNT),])
+# so use the average of entries with both to get
+# an estimated total words for all entries
+with(hbr[!is.na(hbr$PAGE.COUNT) & !is.na(hbr$FULL.TEXT.WORD.COUNT),], 
+     sum(FULL.TEXT.WORD.COUNT)/sum(PAGE.COUNT)) * 
+       with(hbr[!is.na(hbr$PAGE.COUNT),], sum(PAGE.COUNT))
+
+# load graphics
+library(ggplot2)
+theme_set(theme_bw())
