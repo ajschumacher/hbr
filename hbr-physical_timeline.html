@@ -182,30 +182,24 @@ hljs.initHighlightingOnLoad();
 <body>
 <h1>90 Years with Harvard Business Review</h1>
 
-<p>I&#39;m working on the Harvard Business Review data set (a <a href="http://www.kaggle.com/">kaggle</a> <a href="https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/">thing</a>). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I&#39;m using R with knitr (R markdown).</p>
+<p>I&#39;m working on the Harvard Business Review data set (a <a href="http://www.kaggle.com/">kaggle</a> <a href="https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/">thing</a>). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I&#39;m using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.</p>
 
-<pre><code class="r"># read in the provided file
+<pre><code class="r"># read in the provided file, available on the kaggle site
+# https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/data
 hbr &lt;- read.csv(&quot;HBR Citations_correct_abstracts.csv&quot;, strip.white = TRUE, 
     as.is = TRUE)
 
-nrow(hbr)
-</code></pre>
-
-<pre><code>## [1] 12751
-</code></pre>
-
-<pre><code class="r"># 12,751 observations: same as in the alternative Excel files
+# make sure we&#39;ve got the expected number of observations as checked
+# against the Excel files that were originally provided
+stopifnot(nrow(hbr) == 12751)
 
 # confirm that there&#39;s always at most one of ABSTRACT or
 # AUTHOR.SUPPLIED.ABSTRACT
-all(hbr$ABSTRACT == &quot;&quot; | hbr$AUTHOR.SUPPLIED.ABSTRACT == &quot;&quot;)
-</code></pre>
-
-<pre><code>## [1] TRUE
-</code></pre>
-
-<pre><code class="r"># and put it in place
+stopifnot(all(hbr$ABSTRACT == &quot;&quot; | hbr$AUTHOR.SUPPLIED.ABSTRACT == 
+    &quot;&quot;))
+# and put it in a more convenient place
 hbr$abstract &lt;- ifelse(hbr$ABSTRACT != &quot;&quot;, hbr$ABSTRACT, hbr$AUTHOR.SUPPLIED.ABSTRACT)
+# preserve information just in case
 hbr$abstract_type &lt;- ifelse(hbr$ABSTRACT != &quot;&quot;, &quot;HBR&quot;, ifelse(hbr$AUTHOR.SUPPLIED.ABSTRACT != 
     &quot;&quot;, &quot;author&quot;, &quot;none&quot;))
 hbr$ABSTRACT &lt;- NULL

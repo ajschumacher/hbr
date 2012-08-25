@@ -1,21 +1,24 @@
 # 90 Years with Harvard Business Review
 
-I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown).
+I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
 
 ```{r main}
-# read in the provided file
+# read in the provided file, available on the kaggle site
+# https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/data
 hbr <- read.csv('HBR Citations_correct_abstracts.csv',
               strip.white=TRUE,
               as.is=TRUE)
 
-nrow(hbr)
-# 12,751 observations: same as in the alternative Excel files
+# make sure we've got the expected number of observations
+# as checked against the Excel files that were originally provided
+stopifnot(nrow(hbr)==12751)
 
 # confirm that there's always at most one of
 # ABSTRACT or AUTHOR.SUPPLIED.ABSTRACT
-all(hbr$ABSTRACT=="" | hbr$AUTHOR.SUPPLIED.ABSTRACT=="")
-# and put it in place
+stopifnot(all(hbr$ABSTRACT=="" | hbr$AUTHOR.SUPPLIED.ABSTRACT==""))
+# and put it in a more convenient place
 hbr$abstract <- ifelse(hbr$ABSTRACT!="",hbr$ABSTRACT,hbr$AUTHOR.SUPPLIED.ABSTRACT)
+# preserve information just in case
 hbr$abstract_type <- ifelse(hbr$ABSTRACT!="","HBR",
                             ifelse(hbr$AUTHOR.SUPPLIED.ABSTRACT!="","author",
                                    "none"))
