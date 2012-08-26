@@ -1,3 +1,9 @@
+
+
+
+
+
+
 # 90 Years with Harvard Business Review
 
 I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
@@ -54,16 +60,17 @@ The first issue seems to have been published `1922-10-01`. Everyone seems to agr
 
 
 ```r
-# columns 'VOLUME', 'ISSUE', and 'PUBLICATION.DATE', which has something
-# like volume names, are all moderately interesting, but I'll be mostly
-# concerned with publication dates as pulled out above
+# columns "VOLUME", "ISSUE", and "PUBLICATION.DATE", which has something like
+# volume names, are all moderately interesting,
+# but I'll be mostly concerned with publication dates as pulled out above
 
 # How often is HBR published?
 years <- sort(unique(hbr$year))
-dpy <- data.frame(year = years, peryear = sapply(years, function(x) {
-    length(unique(hbr$date[hbr$year == x]))
-}))
-qplot(year, peryear, data = dpy, main = "publication dates per year")
+dpy <- data.frame("year"=years,
+                  "peryear"=sapply(years,function(x) {
+                    length(unique(hbr$date[hbr$year==x]))
+                    }))
+qplot(year, peryear, data=dpy, main="publication dates per year")
 ```
 
 ![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
@@ -74,7 +81,7 @@ There's some fluctuation from special supplements and just irregularities, but b
 
 ```r
 # start of bi-monthly epoch
-head(dpy[dpy$peryear == 6, ], 1)
+head(dpy[dpy$peryear==6,],1)
 ```
 
 ```
@@ -85,7 +92,7 @@ head(dpy[dpy$peryear == 6, ], 1)
 ```r
 
 # start of near-monthly epoch
-head(dpy[dpy$peryear == 11, ], 1)
+head(dpy[dpy$peryear==11,],1)
 ```
 
 ```
@@ -97,22 +104,14 @@ head(dpy[dpy$peryear == 11, ], 1)
 
 # let's look at page counts and word counts
 hbr$pagesN <- hbr$PAGE.COUNT
-# maybe it would be better to use 'START.PAGE' and 'END.PAGE' I don't
-# think it's worth checking into that Let's look at page counts through
-# time
-pty <- data.frame(year = years, pagesthrough = sapply(years, function(x) {
-    sum(hbr$pagesN[hbr$year <= x], na.rm = TRUE)
-}))
-ggplot(pty, aes(year, pagesthrough)) + geom_area() + opts(title = "cumulative pages") + 
-    geom_vline(xintercept = c(1948, 2001), colour = I("red")) + geom_text(x = 1931, 
-    y = 50000, label = paste(round(sum(hbr$pagesN[hbr$year < 1948 & hbr$year > 
-        1922], na.rm = TRUE)/(1948 - 1922)), "pages/year", sep = "\n"), colour = I("blue"), 
-    family = "mono") + scale_x_continuous(limits = c(1920, 2020)) + geom_text(x = 1973, 
-    y = 50000, label = paste(round(sum(hbr$pagesN[hbr$year < 2001 & hbr$year >= 
-        1948], na.rm = TRUE)/(2001 - 1948)), "pages/year", sep = "\n"), colour = I("blue"), 
-    family = "mono") + geom_text(x = 2012, y = 50000, label = paste(round(sum(hbr$pagesN[hbr$year < 
-    2012 & hbr$year >= 2001], na.rm = TRUE)/(2012 - 2001)), "pages/year", sep = "\n"), 
-    colour = I("blue"), family = "mono")
+# maybe it would be better to use "START.PAGE" and "END.PAGE"
+# I don't think it's worth checking into that
+# Let's look at page counts through time
+pty <- data.frame("year"=years,
+                  "pagesthrough"=sapply(years,function(x) {
+                    sum(hbr$pagesN[hbr$year<=x], na.rm=TRUE)
+                    }))
+ggplot(pty, aes(year, pagesthrough)) + geom_area() + opts(title="cumulative pages") + geom_vline(xintercept=c(1948,2001), colour=I("red")) + geom_text(x=1931,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<1948&hbr$year>1922],na.rm=TRUE)/(1948-1922)),"pages/year",sep="\n"), colour=I("blue"), family="mono") + scale_x_continuous(limits=c(1920,2020)) + geom_text(x=1973,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<2001&hbr$year>=1948],na.rm=TRUE)/(2001-1948)),"pages/year",sep="\n"), colour=I("blue"), family="mono") + geom_text(x=2012,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<2012&hbr$year>=2001],na.rm=TRUE)/(2012-2001)),"pages/year",sep="\n"), colour=I("blue"), family="mono")
 ```
 
 ![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
@@ -123,17 +122,13 @@ It looks like the changes in publishing frequency were not offset by too much th
 
 ```r
 # too much in one line
-with(hbr, plot(sort(unique(date)), tapply(pagesN, date, sum, na.rm = TRUE)[order(names(tapply(pagesN, 
-    date, sum, na.rm = TRUE)))], xlim = as.Date(c("1920-01-01", "2020-01-01")), 
-    xlab = "year", ylab = "pages", main = "pages per publication date"))
+with(hbr, plot(sort(unique(date)),tapply(pagesN,date,sum,na.rm=TRUE)[order(names(tapply(pagesN,date,sum,na.rm=TRUE)))],xlim=as.Date(c("1920-01-01","2020-01-01")),xlab="year",ylab="pages",main="pages per publication date"))
 ```
 
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-41.png) 
 
 ```r
-with(hbr, plot(sort(unique(year)), tapply(pagesN, year, sum, na.rm = TRUE)[order(names(tapply(pagesN, 
-    year, sum, na.rm = TRUE)))], xlim = c(1920, 2020), xlab = "year", ylab = "pages", 
-    main = "pages per publication year"))
+with(hbr, plot(sort(unique(year)),tapply(pagesN,year,sum,na.rm=TRUE)[order(names(tapply(pagesN,year,sum,na.rm=TRUE)))],xlim=c(1920,2020),xlab="year",ylab="pages",main="pages per publication year"))
 ```
 
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-42.png) 
@@ -143,8 +138,7 @@ Well, it looks like there was some drop in issue thickness when HBR went to the 
 
 
 ```r
-pty$mark <- c(0, pty$pagesthrough/max(pty$pagesthrough))[-(nrow(pty) + 
-    1)]
+pty$mark <- c(0, pty$pagesthrough / max(pty$pagesthrough))[-(nrow(pty)+1)]
 print(pty)
 ```
 
@@ -260,13 +254,15 @@ So we can get some sort of estimate of the total words ever published, adding in
 
 
 ```r
-# calculate an estimated total word count for the history of HBR (not very
-# readable...)
-with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN), ], sum(wordsN)/sum(pagesN)) * 
-    with(hbr[!is.na(hbr$pagesN), ], sum(pagesN)) + with(hbr[is.na(hbr$pagesN) & 
-    !is.na(hbr$wordsN), ], sum(wordsN)) + with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN), 
-    ], sum(wordsN)/length(pagesN)) * nrow(hbr[is.na(hbr$pagesN) & is.na(hbr$wordsN), 
-    ])
+# calculate an estimated total word count for the history of HBR
+# (not very readable...)
+with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),], 
+     sum(wordsN)/sum(pagesN)) * 
+       with(hbr[!is.na(hbr$pagesN),], sum(pagesN)) +
+       with(hbr[is.na(hbr$pagesN)&!is.na(hbr$wordsN),], sum(wordsN)) +
+       with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),], 
+            sum(wordsN)/length(pagesN)) *
+       nrow(hbr[is.na(hbr$pagesN)&is.na(hbr$wordsN),])
 ```
 
 ```
@@ -284,47 +280,51 @@ Here's some evidence that
 
 
 
-# there are too many columns that I don't care about separately there has
-# GOT to be a better way to do this:
+# there are too many columns that I don't care about separately
+# there has GOT to be a better way to do this:
 hbr$naics <- ""
-for (j in grep("DESC", names(hbr))) {
-    hbr$naics <- paste(hbr$naics, hbr[[j]])
+for (j in grep("DESC",names(hbr))) {
+  hbr$naics <- paste(hbr$naics, hbr[[j]])
 }
 hbr$subjects <- ""
-for (j in grep("TERM", names(hbr))) {
-    hbr$subjects <- paste(hbr$subjects, hbr[[j]])
+for (j in grep("TERM",names(hbr))) {
+  hbr$subjects <- paste(hbr$subjects, hbr[[j]])
 }
 hbr$keywords <- ""
-for (j in grep("KEYWORD", names(hbr))) {
-    hbr$keywords <- paste(hbr$keywords, hbr[[j]])
+for (j in grep("KEYWORD",names(hbr))) {
+  hbr$keywords <- paste(hbr$keywords, hbr[[j]])
 }
 hbr$affils <- ""
-for (j in grep("AFFIL", names(hbr))) {
-    hbr$affils <- paste(hbr$affils, hbr[[j]])
+for (j in grep("AFFIL",names(hbr))) {
+  hbr$affils <- paste(hbr$affils, hbr[[j]])
 }
-# not sure how/if I want to completely deal with names yet this just does
-# most frequent authors and adds a count of authors per article thing
+# not sure how/if I want to completely deal with names yet
+# this just does most frequent authors
+# and adds a count of authors per article thing
 first_names <- c()
 last_names <- c()
 names <- c()
 affils <- c()
 hbr$authorsN <- 0
 for (i in 1:20) {
-    last <- paste("AUTHOR.", i, ".LAST.NAME", sep = "")
-    last_names <- c(last_names, hbr[[last]])
-    first <- paste("AUTHOR.", i, ".FIRST.NAME", sep = "")
-    first_names <- c(first_names, hbr[[first]])
-    affil <- paste("AUTHOR.", i, ".AFFILIATION", sep = "")
-    affils <- c(affils, hbr[[affil]])
-    # if there's anything, that's an author
-    hbr$authorsN <- hbr$authorsN + ifelse(hbr[[last]] == "" & hbr[[first]] == 
-        "" & hbr[[affil]] == "", 0, 1)
+  last <- paste("AUTHOR.",i,".LAST.NAME",sep="")
+  last_names <- c(last_names, hbr[[last]])
+  first <- paste("AUTHOR.",i,".FIRST.NAME",sep="")
+  first_names <- c(first_names, hbr[[first]])
+  affil <- paste("AUTHOR.",i,".AFFILIATION",sep="")
+  affils <- c(affils, hbr[[affil]]) 
+  # if there's anything, that's an author
+  hbr$authorsN <- hbr$authorsN + ifelse(hbr[[last]]=="" &
+                                        hbr[[first]]=="" &
+                                        hbr[[affil]]=="",
+                                        0,1)
 }
-names <- paste(first_names, last_names)
-# meet the most prolific HBR authors tail(sort(table(names)),20)
+names <- paste(first_names,last_names)
+# meet the most prolific HBR authors
+#tail(sort(table(names)),20)
 
 # authors per article over time
-with(hbr, smoothScatter(date, authorsN))
+with(hbr, smoothScatter(date,authorsN))
 ```
 
 ```
@@ -336,7 +336,7 @@ with(hbr, smoothScatter(date, authorsN))
 ```r
 
 # look at more stuff about number authors
-with(hbr, tapply(authorsN, DOCUMENT.TYPE, mean, na.rm = T))
+with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=T))
 ```
 
 ```
@@ -364,7 +364,7 @@ with(hbr, tapply(authorsN, DOCUMENT.TYPE, mean, na.rm = T))
 
 
 # could be useful
-Sys.setenv(NOAWT = TRUE)
+Sys.setenv(NOAWT=TRUE)
 library(tm)
 data("crude")
 crude[[1]]
@@ -409,7 +409,7 @@ stemDocument(crude[[1]])
 temp <- removeNumbers(crude[[1]])
 temp <- removePunctuation(temp)
 temp <- tolower(temp)
-temp <- gsub("\n", " ", temp)
+temp <- gsub('\n',' ',temp)
 stemDocument(temp)
 ```
 

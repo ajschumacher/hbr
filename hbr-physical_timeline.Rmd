@@ -1,8 +1,14 @@
+`r opts_chunk$set(tidy = FALSE)`
+`r opts_chunk$set(fig.width = 8)`
+`r opts_chunk$set(fig.height = 5)`
+`r opts_chunk$set(cache = TRUE)`
+
+
 # 90 Years with Harvard Business Review
 
 I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
 
-```{r, tidy=FALSE}
+```{r}
 # set up graphics for later
 suppressPackageStartupMessages(library(ggplot2))
 theme_set(theme_bw())
