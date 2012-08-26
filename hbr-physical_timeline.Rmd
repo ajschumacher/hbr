@@ -6,7 +6,10 @@
 
 # 90 Years of Harvard Business Review
 
-I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
+> Bare lists of words are found suggestive to an imaginative and excited mind.
+-Ralph Waldo Emerson, writer and philosopher (1803-1882) (thanks to [a.w.a.d](http://wordsmith.org/awad/))
+
+I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) to show my work. All errors due to [Aaron Schumacher](mailto:ajschumacher@gmail.com).
 
 ```{r}
 # set up graphics for later
@@ -24,6 +27,7 @@ hbr <- read.csv('HBR Citations_correct_abstracts.csv',
 # < 'HBR Citations_correct_abstracts.csv' > hbr.csv
 # cp 'HBR Citations_correct_abstracts.csv' original.csv
 # mv hbr.csv 'HBR Citations_correct_abstracts.csv'
+# That filtering only took out two bytes. Not an issue.
 # Your mileage may vary.
 
 # make sure we've got the expected number of observations
@@ -88,13 +92,29 @@ pty <- data.frame("year"=years,
                   "pagesthrough"=sapply(years,function(x) {
                     sum(hbr$pagesN[hbr$year<=x], na.rm=TRUE)
                     }))
-ggplot(pty, aes(year, pagesthrough)) + geom_area() + opts(title="cumulative pages") + geom_vline(xintercept=c(1948,2001), colour=I("red")) + geom_text(x=1931,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<1948&hbr$year>1922],na.rm=TRUE)/(1948-1922)),"pages/year",sep="\n"), colour=I("blue"), family="mono") + scale_x_continuous(limits=c(1920,2020)) + geom_text(x=1973,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<2001&hbr$year>=1948],na.rm=TRUE)/(2001-1948)),"pages/year",sep="\n"), colour=I("blue"), family="mono") + geom_text(x=2012,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<2012&hbr$year>=2001],na.rm=TRUE)/(2012-2001)),"pages/year",sep="\n"), colour=I("blue"), family="mono")
+ggplot(pty, aes(year, pagesthrough)) + 
+  geom_area() + 
+  opts(title="cumulative pages") + 
+  geom_vline(xintercept=c(1948,2001), colour=I("red")) + 
+  geom_text(x=1931, y=50000, 
+            label=paste(round(sum(hbr$pagesN[hbr$year<1948&hbr$year>1922],na.rm=TRUE)/
+              (1948-1922)),"pages/year",sep="\n"),
+            colour=I("blue"), family="mono") + 
+  scale_x_continuous(limits=c(1920,2020)) + 
+  geom_text(x=1973, y=50000, 
+            label=paste(round(sum(hbr$pagesN[hbr$year<2001&hbr$year>=1948],na.rm=TRUE)/
+              (2001-1948)), "pages/year",sep="\n"),
+            colour=I("blue"), family="mono") +
+  geom_text(x=2012, y=50000,
+            label=paste(round(sum(hbr$pagesN[hbr$year<2012&hbr$year>=2001],na.rm=TRUE)/
+              (2012-2001)), "pages/year",sep="\n"),
+            colour=I("blue"), family="mono")
 ```
 
-It looks like the changes in publishing frequency were not offset by too much thinning of individual issues.
+It looks like the changes in publishing frequency were not offset by too much thinning of individual issues. (I won't try to dig into words per year.)
 
 ```{r}
-# too much in one line
+# ugly, but it works; look at the output
 with(hbr, plot(sort(unique(date)),tapply(pagesN,date,sum,na.rm=TRUE)[order(names(tapply(pagesN,date,sum,na.rm=TRUE)))],xlim=as.Date(c("1920-01-01","2020-01-01")),xlab="year",ylab="pages",main="pages per publication date"))
 with(hbr, plot(sort(unique(year)),tapply(pagesN,year,sum,na.rm=TRUE)[order(names(tapply(pagesN,year,sum,na.rm=TRUE)))],xlim=c(1920,2020),xlab="year",ylab="pages",main="pages per publication year"))
 ```
@@ -106,7 +126,7 @@ pty$mark <- c(0, pty$pagesthrough / max(pty$pagesthrough))[-(nrow(pty)+1)]
 print(pty,row.names=FALSE)
 ```
 
-I would like to get a total word count.
+I can't say for sure how many words were on pages before 1990, but I would like to estimate a total word count. Here's an attempt:
 
 ```{r}
 hbr$wordsN <- hbr$FULL.TEXT.WORD.COUNT
@@ -133,7 +153,6 @@ with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),],
 I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `r nrow(hbr[!is.na(hbr$pagesN),])/nrow(hbr)` of entries have page counts, for a total of `r with(hbr[!is.na(hbr$pagesN),], sum(pagesN))` pages. I'll use page count as a estimate of quantity of content.
 
 ```{r}
-# Let's get into the text analysis.
 # There are too many columns that I don't care about separately.
 # (there has GOT to be a better way to do this...)
 hbr$naics <- ""
@@ -176,22 +195,41 @@ for (i in 1:20) {
 names <- paste(first_names,last_names)
 hbr$authorsN[hbr$authorsN==0] <- NA
 # meet the most prolific HBR authors
-#tail(sort(table(names)),20)
+tail(sort(table(names)),10)
+```
 
-# This might be interesting...
-# authors per article over time
+Okay, I'm almost ready to look at the text data, but first, something about collaboration:
+
+```{r,message=FALSE}
 # excuse the numeric dates
 with(hbr, smoothScatter(date,authorsN,main="authors per article over time",ylim=c(0,20)))
+with(hbr, plot(sort(unique(year)),
+               tapply(authorsN,year,mean,na.rm=T),
+               xlab="year", ylab="mean number of authors",
+               main="mean authors per article per year"))
+# overall trend looks good, but weird outliers are a problem
+# especially around the 70's
+# What's going on with document types? Check average authors per document by type:
 with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=TRUE))
-with(hbr, plot(sort(unique(year)), tapply(authorsN,year,mean,na.rm=T)))
-with(hbr[hbr$DOCUMENT.TYPE=="Article",], plot(sort(unique(year)), tapply(authorsN,year,mean,na.rm=T)))
-with(hbr[hbr$DOCUMENT.TYPE=="Article",], plot(sort(unique(substr(year,1,3))), tapply(authorsN,substr(year,1,3),mean,na.rm=T)))
-# look at more stuff about number authors
-with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=T))
+# How many of each of these are there?
+with(hbr, tapply(authorsN,DOCUMENT.TYPE,length))
+# Letters are one thing, but abstracts are an issue too.
+# So, looking at just Articles:
+with(hbr[hbr$DOCUMENT.TYPE=="Article",],
+     plot(sort(unique(year)),
+          tapply(authorsN,year,mean,na.rm=T)))
+# Okay, I like this story. Let's do it by decades defined as 1922-1931 etc.
+with(hbr[hbr$DOCUMENT.TYPE=="Article"&hbr$year<2012,],
+     barplot(tapply(authorsN,substr(year-2,1,3),mean,na.rm=T),
+             ylim=c(1,1.8), main="authors per Article"))
+# Looks good. Pull the numbers.
+with(hbr[hbr$DOCUMENT.TYPE=="Article"&hbr$year<2012,],
+     tapply(authorsN,substr(year-2,1,3),mean,na.rm=T))
+```
 
+At this point I already have a few interesting stories. Time to look at the text.
 
-
-
+```{r}
 # could be useful
 Sys.setenv(NOAWT=TRUE)
 library(tm)
