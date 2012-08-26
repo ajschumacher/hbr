@@ -4,7 +4,7 @@
 `r opts_chunk$set(cache = TRUE)`
 
 
-# 90 Years with Harvard Business Review
+# 90 Years of Harvard Business Review
 
 I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
 
@@ -103,7 +103,7 @@ Well, it looks like there was some drop in issue thickness when HBR went to the 
 
 ```{r}
 pty$mark <- c(0, pty$pagesthrough / max(pty$pagesthrough))[-(nrow(pty)+1)]
-print(pty)
+print(pty,row.names=FALSE)
 ```
 
 I would like to get a total word count.
@@ -132,15 +132,10 @@ with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),],
 
 I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `r nrow(hbr[!is.na(hbr$pagesN),])/nrow(hbr)` of entries have page counts, for a total of `r with(hbr[!is.na(hbr$pagesN),], sum(pagesN))` pages. I'll use page count as a estimate of quantity of content.
 
-Here's some evidence that 
-
 ```{r}
-
-
-
-
-# there are too many columns that I don't care about separately
-# there has GOT to be a better way to do this:
+# Let's get into the text analysis.
+# There are too many columns that I don't care about separately.
+# (there has GOT to be a better way to do this...)
 hbr$naics <- ""
 for (j in grep("DESC",names(hbr))) {
   hbr$naics <- paste(hbr$naics, hbr[[j]])
@@ -179,12 +174,18 @@ for (i in 1:20) {
                                         0,1)
 }
 names <- paste(first_names,last_names)
+hbr$authorsN[hbr$authorsN==0] <- NA
 # meet the most prolific HBR authors
 #tail(sort(table(names)),20)
 
+# This might be interesting...
 # authors per article over time
-with(hbr, smoothScatter(date,authorsN))
-
+# excuse the numeric dates
+with(hbr, smoothScatter(date,authorsN,main="authors per article over time",ylim=c(0,20)))
+with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=TRUE))
+with(hbr, plot(sort(unique(year)), tapply(authorsN,year,mean,na.rm=T)))
+with(hbr[hbr$DOCUMENT.TYPE=="Article",], plot(sort(unique(year)), tapply(authorsN,year,mean,na.rm=T)))
+with(hbr[hbr$DOCUMENT.TYPE=="Article",], plot(sort(unique(substr(year,1,3))), tapply(authorsN,substr(year,1,3),mean,na.rm=T)))
 # look at more stuff about number authors
 with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=T))
 

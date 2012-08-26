@@ -4,7 +4,7 @@
 
 
 
-# 90 Years with Harvard Business Review
+# 90 Years of Harvard Business Review
 
 I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) and showing all my work, with some use of stopifnot() and commenting some things out.
 
@@ -272,16 +272,11 @@ with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),],
 
 I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `0.9842` of entries have page counts, for a total of `73154` pages. I'll use page count as a estimate of quantity of content.
 
-Here's some evidence that 
-
 
 ```r
-
-
-
-
-# there are too many columns that I don't care about separately
-# there has GOT to be a better way to do this:
+# Let's get into the text analysis.
+# There are too many columns that I don't care about separately.
+# (there has GOT to be a better way to do this...)
 hbr$naics <- ""
 for (j in grep("DESC",names(hbr))) {
   hbr$naics <- paste(hbr$naics, hbr[[j]])
@@ -320,42 +315,85 @@ for (i in 1:20) {
                                         0,1)
 }
 names <- paste(first_names,last_names)
+hbr$authorsN[hbr$authorsN==0] <- NA
 # meet the most prolific HBR authors
 #tail(sort(table(names)),20)
 
+# This might be interesting...
 # authors per article over time
-with(hbr, smoothScatter(date,authorsN))
+# excuse the numeric dates
+with(hbr, smoothScatter(date,authorsN,main="authors per article over time",ylim=c(0,20)))
 ```
 
 ```
 ## KernSmooth 2.23 loaded Copyright M. P. Wand 1997-2009
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-81.png) 
 
 ```r
+with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=TRUE))
+```
 
+```
+##             Abstract              Article         Bibliography 
+##                7.237                1.418                1.000 
+##            Biography         Book Chapter          Book Review 
+##                1.333                1.000                1.051 
+##           Case Study        Course Review            Editorial 
+##                2.615                  NaN                1.073 
+## Entertainment Review              Erratum                Essay 
+##                1.000                1.200                1.000 
+##              Excerpt                Image            Interview 
+##                1.183                1.000                1.199 
+##               Letter             Obituary              Opinion 
+##                2.230                1.000                1.000 
+##                Other                 Poem           Proceeding 
+##                1.000                1.000                1.143 
+##       Product Review          Short Story               Speech 
+##                1.667                1.750                1.000
+```
+
+```r
+with(hbr, plot(sort(unique(year)), tapply(authorsN,year,mean,na.rm=T)))
+```
+
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-82.png) 
+
+```r
+with(hbr[hbr$DOCUMENT.TYPE=="Article",], plot(sort(unique(year)), tapply(authorsN,year,mean,na.rm=T)))
+```
+
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-83.png) 
+
+```r
+with(hbr[hbr$DOCUMENT.TYPE=="Article",], plot(sort(unique(substr(year,1,3))), tapply(authorsN,substr(year,1,3),mean,na.rm=T)))
+```
+
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-84.png) 
+
+```r
 # look at more stuff about number authors
 with(hbr, tapply(authorsN,DOCUMENT.TYPE,mean,na.rm=T))
 ```
 
 ```
 ##             Abstract              Article         Bibliography 
-##               1.3547               1.2902               0.4000 
+##                7.237                1.418                1.000 
 ##            Biography         Book Chapter          Book Review 
-##               1.3333               1.0000               0.7498 
+##                1.333                1.000                1.051 
 ##           Case Study        Course Review            Editorial 
-##               2.1126               0.0000               0.8110 
+##                2.615                  NaN                1.073 
 ## Entertainment Review              Erratum                Essay 
-##               1.0000               0.1132               1.0000 
+##                1.000                1.200                1.000 
 ##              Excerpt                Image            Interview 
-##               1.0638               0.5000               1.0478 
+##                1.183                1.000                1.199 
 ##               Letter             Obituary              Opinion 
-##               2.1756               0.7500               0.9500 
+##                2.230                1.000                1.000 
 ##                Other                 Poem           Proceeding 
-##               0.1538               1.0000               0.9412 
+##                1.000                1.000                1.143 
 ##       Product Review          Short Story               Speech 
-##               1.6667               1.7500               1.0000
+##                1.667                1.750                1.000
 ```
 
 ```r
