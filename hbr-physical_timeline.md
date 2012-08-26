@@ -9,7 +9,7 @@
 > Bare lists of words are found suggestive to an imaginative and excited mind.
 -Ralph Waldo Emerson, writer and philosopher (1803-1882) (thanks to [a.w.a.d](http://wordsmith.org/awad/))
 
-I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) to show my work. All errors due to [Aaron Schumacher](mailto:ajschumacher@gmail.com).
+I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) to show my work. I'm [Aaron Schumacher](mailto:ajschumacher@gmail.com) and I welcome any comments, corrections, suggestions, etc.
 
 
 ```r
@@ -335,12 +335,16 @@ for (i in 1:20) {
 }
 names <- paste(first_names,last_names)
 hbr$authorsN[hbr$authorsN==0] <- NA
-# meet the most prolific HBR authors
-tail(sort(table(names)),10)
+# meet the eleven most prolific HBR authors
+# people might have different name spellings
+# but there's a three-way tie for tenth in my method, so...
+tail(sort(table(names)),13)
 ```
 
 ```
 ## names
+##      Anne G. Perkins     David E. Gumpert    Michael E. Porter 
+##                   34                   34                   34 
 ##            Nan Stone       Gardiner Morse    Mary V. Chatfield 
 ##                   35                   41                   42 
 ## Rosabeth Moss Kanter    Lorna M. Daniells     Peter F. Drucker 
@@ -452,61 +456,7 @@ with(hbr[hbr$DOCUMENT.TYPE=="Article"&hbr$year<2012,],
 ```
 
 
-At this point I already have a few interesting stories. Time to look at the text.
+At this point I already have a few interesting stories. Time to look at the text - later.
 
 
-```r
-# could be useful
-Sys.setenv(NOAWT=TRUE)
-library(tm)
-data("crude")
-crude[[1]]
-```
-
-```
-## Diamond Shamrock Corp said that
-## effective today it had cut its contract prices for crude oil by
-## 1.50 dlrs a barrel.
-##     The reduction brings its posted price for West Texas
-## Intermediate to 16.00 dlrs a barrel, the copany said.
-##     "The price reduction today was made in the light of falling
-## oil product prices and a weak crude oil market," a company
-## spokeswoman said.
-##     Diamond is the latest in a line of U.S. oil companies that
-## have cut its contract, or posted, prices over the last two days
-## citing weak oil markets.
-##  Reuter
-```
-
-```r
-stemDocument(crude[[1]])
-```
-
-```
-## Diamond Shamrock Corp said that
-## effect today it had cut it contract price for crude oil by
-## 1.50 dlrs a barrel.
-##     The reduct bring it post price for West Texas
-## Intermedi to 16.00 dlrs a barrel, the copani said.
-##     "The price reduct today was made in the light of falling
-## oil product price and a weak crude oil market," a company
-## spokeswoman said.
-##     Diamond is the latest in a line of U.S. oil compani that
-## hav cut it contract, or posted, price over the last two days
-## cit weak oil markets.
-##  Reuter
-```
-
-```r
-# and these are all vectorized
-temp <- removeNumbers(crude[[1]])
-temp <- removePunctuation(temp)
-temp <- tolower(temp)
-temp <- gsub('\n',' ',temp)
-stemDocument(temp)
-```
-
-```
-## diamond shamrock corp said that effect today it had cut it contract price for crude oil by  dlrs a barrel     the reduct bring it post price for west texa intermedi to  dlrs a barrel the copani said     the price reduct today was made in the light of fall oil product price and a weak crude oil market a compani spokeswoman said     diamond is the latest in a line of us oil compani that have cut it contract or post price over the last two day cite weak oil market  reuter
-```
 

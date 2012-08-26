@@ -9,7 +9,7 @@
 > Bare lists of words are found suggestive to an imaginative and excited mind.
 -Ralph Waldo Emerson, writer and philosopher (1803-1882) (thanks to [a.w.a.d](http://wordsmith.org/awad/))
 
-I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) to show my work. All errors due to [Aaron Schumacher](mailto:ajschumacher@gmail.com).
+I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggle.com/) [thing](https://www.kaggle.com/c/harvard-business-review-vision-statement-prospect/)). I want to make the timeline more physically intuitive and more closely linked to the pages of HBR. I'm using R with knitr (R markdown) to show my work. I'm [Aaron Schumacher](mailto:ajschumacher@gmail.com) and I welcome any comments, corrections, suggestions, etc.
 
 ```{r}
 # set up graphics for later
@@ -194,8 +194,10 @@ for (i in 1:20) {
 }
 names <- paste(first_names,last_names)
 hbr$authorsN[hbr$authorsN==0] <- NA
-# meet the most prolific HBR authors
-tail(sort(table(names)),10)
+# meet the eleven most prolific HBR authors
+# people might have different name spellings
+# but there's a three-way tie for tenth in my method, so...
+tail(sort(table(names)),13)
 ```
 
 Okay, I'm almost ready to look at the text data, but first, something about collaboration:
@@ -227,9 +229,9 @@ with(hbr[hbr$DOCUMENT.TYPE=="Article"&hbr$year<2012,],
      tapply(authorsN,substr(year-2,1,3),mean,na.rm=T))
 ```
 
-At this point I already have a few interesting stories. Time to look at the text.
+At this point I already have a few interesting stories. Time to look at the text - later.
 
-```{r}
+```{r, eval=FALSE, echo=FALSE}
 # could be useful
 Sys.setenv(NOAWT=TRUE)
 library(tm)
