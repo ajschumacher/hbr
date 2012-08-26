@@ -5,7 +5,7 @@ I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggl
 
 ```r
 # set up graphics for later
-library(ggplot2)
+suppressPackageStartupMessages(library(ggplot2))
 theme_set(theme_bw())
 
 # Read in the provided file, available at the kaggle site
@@ -98,7 +98,156 @@ head(dpy[dpy$peryear == 11, ], 1)
 # let's look at page counts and word counts
 hbr$pagesN <- hbr$PAGE.COUNT
 # maybe it would be better to use 'START.PAGE' and 'END.PAGE' I don't
-# think it's worth checking into that; but I do want word count
+# think it's worth checking into that Let's look at page counts through
+# time
+pty <- data.frame(year = years, pagesthrough = sapply(years, function(x) {
+    sum(hbr$pagesN[hbr$year <= x], na.rm = TRUE)
+}))
+ggplot(pty, aes(year, pagesthrough)) + geom_area() + opts(title = "cumulative pages") + 
+    geom_vline(xintercept = c(1948, 2001), colour = I("red")) + geom_text(x = 1931, 
+    y = 50000, label = paste(round(sum(hbr$pagesN[hbr$year < 1948 & hbr$year > 
+        1922], na.rm = TRUE)/(1948 - 1922)), "pages/year", sep = "\n"), colour = I("blue"), 
+    family = "mono") + scale_x_continuous(limits = c(1920, 2020)) + geom_text(x = 1973, 
+    y = 50000, label = paste(round(sum(hbr$pagesN[hbr$year < 2001 & hbr$year >= 
+        1948], na.rm = TRUE)/(2001 - 1948)), "pages/year", sep = "\n"), colour = I("blue"), 
+    family = "mono") + geom_text(x = 2012, y = 50000, label = paste(round(sum(hbr$pagesN[hbr$year < 
+    2012 & hbr$year >= 2001], na.rm = TRUE)/(2012 - 2001)), "pages/year", sep = "\n"), 
+    colour = I("blue"), family = "mono")
+```
+
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
+
+
+It looks like the changes in publishing frequency were not offset by too much thinning of individual issues.
+
+
+```r
+# too much in one line
+with(hbr, plot(sort(unique(date)), tapply(pagesN, date, sum, na.rm = TRUE)[order(names(tapply(pagesN, 
+    date, sum, na.rm = TRUE)))], xlim = as.Date(c("1920-01-01", "2020-01-01")), 
+    xlab = "year", ylab = "pages", main = "pages per publication date"))
+```
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-41.png) 
+
+```r
+with(hbr, plot(sort(unique(year)), tapply(pagesN, year, sum, na.rm = TRUE)[order(names(tapply(pagesN, 
+    year, sum, na.rm = TRUE)))], xlim = c(1920, 2020), xlab = "year", ylab = "pages", 
+    main = "pages per publication year"))
+```
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-42.png) 
+
+
+Well, it looks like there was some drop in issue thickness when HBR went to the near-monthly frequency in 2001. But doubling (or nearly so) the frequency gave the highest ever yearly page counts. Here's how to space out the year labels in the combined anthology of all HBR ever, which is how to space out my timeline weighted by HBR commentary.
+
+
+```r
+pty$mark <- c(0, pty$pagesthrough/max(pty$pagesthrough))[-(nrow(pty) + 
+    1)]
+print(pty)
+```
+
+```
+##    year pagesthrough     mark
+## 1  1922          130 0.000000
+## 2  1923          679 0.001777
+## 3  1924         1224 0.009282
+## 4  1925         1743 0.016732
+## 5  1926         2289 0.023826
+## 6  1927         2853 0.031290
+## 7  1928         3410 0.039000
+## 8  1929         3951 0.046614
+## 9  1930         4482 0.054009
+## 10 1931         5006 0.061268
+## 11 1932         5541 0.068431
+## 12 1933         6108 0.075744
+## 13 1934         6639 0.083495
+## 14 1935         7181 0.090754
+## 15 1936         7711 0.098163
+## 16 1937         8226 0.105408
+## 17 1938         8760 0.112448
+## 18 1939         9306 0.119747
+## 19 1940         9839 0.127211
+## 20 1941        10358 0.134497
+## 21 1942        10880 0.141592
+## 22 1943        11466 0.148727
+## 23 1944        11986 0.156738
+## 24 1945        12518 0.163846
+## 25 1946        13064 0.171118
+## 26 1947        13581 0.178582
+## 27 1948        14351 0.185649
+## 28 1949        15149 0.196175
+## 29 1950        15854 0.207084
+## 30 1951        16573 0.216721
+## 31 1952        17290 0.226549
+## 32 1953        18019 0.236351
+## 33 1954        18765 0.246316
+## 34 1955        19524 0.256514
+## 35 1956        20255 0.266889
+## 36 1957        21029 0.276882
+## 37 1958        21812 0.287462
+## 38 1959        22597 0.298166
+## 39 1960        23460 0.308896
+## 40 1961        24304 0.320693
+## 41 1962        25177 0.332231
+## 42 1963        26055 0.344164
+## 43 1964        26928 0.356166
+## 44 1965        27778 0.368100
+## 45 1966        28617 0.379719
+## 46 1967        29500 0.391188
+## 47 1968        30352 0.403259
+## 48 1969        31200 0.414906
+## 49 1970        32068 0.426498
+## 50 1971        32907 0.438363
+## 51 1972        33716 0.449832
+## 52 1973        34531 0.460891
+## 53 1974        35324 0.472032
+## 54 1975        36147 0.482872
+## 55 1976        36978 0.494122
+## 56 1977        37822 0.505482
+## 57 1978        38695 0.517019
+## 58 1979        39644 0.528953
+## 59 1980        40568 0.541925
+## 60 1981        41590 0.554556
+## 61 1982        42440 0.568527
+## 62 1983        43326 0.580146
+## 63 1984        44311 0.592257
+## 64 1985        45339 0.605722
+## 65 1986        46168 0.619775
+## 66 1987        46987 0.631107
+## 67 1988        47778 0.642303
+## 68 1989        48815 0.653115
+## 69 1990        49935 0.667291
+## 70 1991        50942 0.682601
+## 71 1992        51850 0.696367
+## 72 1993        52769 0.708779
+## 73 1994        53692 0.721341
+## 74 1995        54645 0.733958
+## 75 1996        55589 0.746986
+## 76 1997        56470 0.759890
+## 77 1998        57299 0.771933
+## 78 1999        58069 0.783265
+## 79 2000        58862 0.793791
+## 80 2001        60123 0.804631
+## 81 2002        61296 0.821869
+## 82 2003        62569 0.837904
+## 83 2004        63956 0.855305
+## 84 2005        65406 0.874265
+## 85 2006        66883 0.894086
+## 86 2007        68285 0.914277
+## 87 2008        69560 0.933442
+## 88 2009        70759 0.950871
+## 89 2010        71898 0.967261
+## 90 2011        73028 0.982831
+## 91 2012        73154 0.998278
+```
+
+
+I would like to get a total word count.
+
+
+```r
 hbr$wordsN <- hbr$FULL.TEXT.WORD.COUNT
 ```
 
@@ -127,8 +276,14 @@ with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN), ], sum(wordsN)/sum(pagesN)) *
 
 I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `0.9842` of entries have page counts, for a total of `73154` pages. I'll use page count as a estimate of quantity of content.
 
+Here's some evidence that 
+
 
 ```r
+
+
+
+
 # there are too many columns that I don't care about separately there has
 # GOT to be a better way to do this:
 hbr$naics <- ""
@@ -176,7 +331,7 @@ with(hbr, smoothScatter(date, authorsN))
 ## KernSmooth 2.23 loaded Copyright M. P. Wand 1997-2009
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
 
 ```r
 

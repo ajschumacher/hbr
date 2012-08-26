@@ -4,7 +4,7 @@ I'm working on the Harvard Business Review data set (a [kaggle](http://www.kaggl
 
 ```{r, tidy=FALSE}
 # set up graphics for later
-library(ggplot2)
+suppressPackageStartupMessages(library(ggplot2))
 theme_set(theme_bw())
 
 # Read in the provided file, available at the kaggle site
@@ -76,7 +76,33 @@ head(dpy[dpy$peryear==11,],1)
 # let's look at page counts and word counts
 hbr$pagesN <- hbr$PAGE.COUNT
 # maybe it would be better to use "START.PAGE" and "END.PAGE"
-# I don't think it's worth checking into that; but I do want word count
+# I don't think it's worth checking into that
+# Let's look at page counts through time
+pty <- data.frame("year"=years,
+                  "pagesthrough"=sapply(years,function(x) {
+                    sum(hbr$pagesN[hbr$year<=x], na.rm=TRUE)
+                    }))
+ggplot(pty, aes(year, pagesthrough)) + geom_area() + opts(title="cumulative pages") + geom_vline(xintercept=c(1948,2001), colour=I("red")) + geom_text(x=1931,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<1948&hbr$year>1922],na.rm=TRUE)/(1948-1922)),"pages/year",sep="\n"), colour=I("blue"), family="mono") + scale_x_continuous(limits=c(1920,2020)) + geom_text(x=1973,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<2001&hbr$year>=1948],na.rm=TRUE)/(2001-1948)),"pages/year",sep="\n"), colour=I("blue"), family="mono") + geom_text(x=2012,y=50000,label=paste(round(sum(hbr$pagesN[hbr$year<2012&hbr$year>=2001],na.rm=TRUE)/(2012-2001)),"pages/year",sep="\n"), colour=I("blue"), family="mono")
+```
+
+It looks like the changes in publishing frequency were not offset by too much thinning of individual issues.
+
+```{r}
+# too much in one line
+with(hbr, plot(sort(unique(date)),tapply(pagesN,date,sum,na.rm=TRUE)[order(names(tapply(pagesN,date,sum,na.rm=TRUE)))],xlim=as.Date(c("1920-01-01","2020-01-01")),xlab="year",ylab="pages",main="pages per publication date"))
+with(hbr, plot(sort(unique(year)),tapply(pagesN,year,sum,na.rm=TRUE)[order(names(tapply(pagesN,year,sum,na.rm=TRUE)))],xlim=c(1920,2020),xlab="year",ylab="pages",main="pages per publication year"))
+```
+
+Well, it looks like there was some drop in issue thickness when HBR went to the near-monthly frequency in 2001. But doubling (or nearly so) the frequency gave the highest ever yearly page counts. Here's how to space out the year labels in the combined anthology of all HBR ever, which is how to space out my timeline weighted by HBR commentary.
+
+```{r}
+pty$mark <- c(0, pty$pagesthrough / max(pty$pagesthrough))[-(nrow(pty)+1)]
+print(pty)
+```
+
+I would like to get a total word count.
+
+```{r}
 hbr$wordsN <- hbr$FULL.TEXT.WORD.COUNT
 ```
 
@@ -100,7 +126,13 @@ with(hbr[!is.na(hbr$pagesN) & !is.na(hbr$wordsN),],
 
 I'm prepared to call that forty million words. It might be possible to do better using the "DOCUMENT.TYPE" column, but perhaps not much better. (There are four "Image" entries; three of them have word counts, all four have page counts.) Anyway, `r nrow(hbr[!is.na(hbr$pagesN),])/nrow(hbr)` of entries have page counts, for a total of `r with(hbr[!is.na(hbr$pagesN),], sum(pagesN))` pages. I'll use page count as a estimate of quantity of content.
 
+Here's some evidence that 
+
 ```{r}
+
+
+
+
 # there are too many columns that I don't care about separately
 # there has GOT to be a better way to do this:
 hbr$naics <- ""
